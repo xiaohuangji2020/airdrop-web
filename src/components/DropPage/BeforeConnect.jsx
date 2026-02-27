@@ -21,7 +21,7 @@ export default function BeforeConnect({
             {myId ? (
               <QRCodeSVG
                 value={`${window.location.origin}/drop?peerId=${myId}`}
-                size={160}
+                size={200}
               />
             ) : (
               <div className="dp-qr-loading">Loading...</div>

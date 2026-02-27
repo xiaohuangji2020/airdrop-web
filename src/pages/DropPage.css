@@ -154,12 +154,19 @@
 }
 
 /* ===== Before Connect ===== */
+.dp-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  padding: 0 48px;
+  flex: 1;
+}
+
 .dp-before-main {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 60px 32px 40px;
+  padding: 60px 0 40px;
 }
 
 .dp-before-hero {
@@ -188,7 +195,6 @@
   border-radius: 20px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.07);
   width: 100%;
-  max-width: 900px;
   overflow: hidden;
 }
 
@@ -210,7 +216,7 @@
 }
 
 .dp-qr-box {
-  background: #2d6a5a;
+  background: #2d566a;
   border-radius: 12px;
   padding: 24px;
   display: flex;
@@ -233,8 +239,8 @@
 }
 
 .dp-qr-loading {
-  width: 160px;
-  height: 160px;
+  width: 200px;
+  height: 200px;
   background: white;
   border-radius: 6px;
   display: flex;
@@ -348,7 +354,7 @@
 /* ===== After Connect ===== */
 .dp-after-main {
   flex: 1;
-  padding: 24px 24px 0;
+  padding: 24px 48px 0;
 }
 
 .dp-after-grid {
@@ -631,14 +637,11 @@
 
 /* ===== Activity Log ===== */
 .dp-log-wrapper {
-  padding: 0 24px;
+  padding: 0 48px;
 }
 
-.dp-log-wrapper.before {
-  max-width: 700px;
-  margin: 0 auto;
-  width: 100%;
-  padding: 0 32px;
+.dp-content-wrapper .dp-log-wrapper {
+  padding: 0;
 }
 
 .dp-log-section {
@@ -794,5 +797,52 @@
   }
   .dp-navbar-autoid {
     display: none;
+  }
+
+  /* Navbar */
+  .dp-navbar {
+    padding: 0 16px;
+  }
+  .dp-navbar-left {
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+  .dp-logo-sub {
+    display: none;
+  }
+  .dp-navbar-id {
+    min-width: 0;
+  }
+  .dp-navbar-id-value {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+  }
+
+  /* Padding */
+  .dp-content-wrapper {
+    padding: 0 16px;
+  }
+  .dp-after-main {
+    padding: 16px 16px 0;
+  }
+  .dp-log-wrapper {
+    padding: 0 16px;
+  }
+  .dp-before-main {
+    padding: 28px 0 20px;
+  }
+  .dp-before-hero {
+    margin-bottom: 24px;
+  }
+  .dp-qr-panel {
+    padding: 28px 20px;
+  }
+  .dp-connect-panel {
+    padding: 24px 20px;
   }
 }

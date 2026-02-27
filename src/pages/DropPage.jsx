@@ -170,23 +170,29 @@ export default function DropPage() {
       <Navbar myId={myId} connected={!!conn} onDisconnect={handleDisconnect} />
 
       {!conn ? (
-        <BeforeConnect
-          myId={myId}
-          customId={customId} setCustomId={setCustomId} onSetCustomId={handleSetCustomId}
-          targetId={targetId} setTargetId={setTargetId} onConnect={connectToPeer}
-        />
+        <div className="dp-content-wrapper">
+          <BeforeConnect
+            myId={myId}
+            customId={customId} setCustomId={setCustomId} onSetCustomId={handleSetCustomId}
+            targetId={targetId} setTargetId={setTargetId} onConnect={connectToPeer}
+          />
+          <div className="dp-log-wrapper">
+            <ActivityLog logs={logs} />
+          </div>
+        </div>
       ) : (
-        <AfterConnect
-          receivedFiles={receivedFiles} sentFiles={sentFiles}
-          textMessage={textMessage} setTextMessage={setTextMessage}
-          onSendText={handleSendText} onSendFile={handleSendFile}
-          onDownload={handleDownload} onRemove={handleRemove}
-        />
+        <>
+          <AfterConnect
+            receivedFiles={receivedFiles} sentFiles={sentFiles}
+            textMessage={textMessage} setTextMessage={setTextMessage}
+            onSendText={handleSendText} onSendFile={handleSendFile}
+            onDownload={handleDownload} onRemove={handleRemove}
+          />
+          <div className="dp-log-wrapper">
+            <ActivityLog logs={logs} />
+          </div>
+        </>
       )}
-
-      <div className={`dp-log-wrapper ${conn ? 'after' : 'before'}`}>
-        <ActivityLog logs={logs} />
-      </div>
 
       <Footer connected={!!conn} />
     </div>
