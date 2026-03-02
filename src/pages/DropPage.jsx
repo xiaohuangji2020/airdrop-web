@@ -68,6 +68,9 @@ export default function DropPage() {
             addLog(`Connected to ${autoConnectId}`, 'log-green');
             setupConnection(connection);
             setIsAutoConnecting(false);
+            const url = new URL(window.location.href);
+            url.searchParams.delete('peerId');
+            window.history.replaceState({}, '', url.toString());
           });
           connection.on('error', () => {
             addLog('Connection failed.', 'log-red');

@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 
 function FileIcon({ fileType }) {
   if (fileType?.startsWith('image/')) return <span>🖼</span>;
@@ -77,9 +77,76 @@ export default function AfterConnect({
   onDownload, onRemove
 }) {
   const fileInputRef = useRef(null);
+  const pendingSendRef = useRef(false);
+
+  // 当 textMessage 被粘贴内容更新后，自动触发发送
+  useEffect(() => {
+    if (pendingSendRef.current) {
+      pendingSendRef.current = false;
+      onSendText();
+    }
+  }, [textMessage, onSendText]);
+
+  // 全局监听 paste 事件，焦点不在输入框时直接发送剪切板内容
+  useEffect(() => {
+    const handlePaste = (e) => {
+      const active = document.activeElement;
+      if (active?.tagName === 'TEXTAREA' || active?.tagName === 'INPUT') return;
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      // 优先处理文件/图片
+      for (const item of items) {
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) { onSendFile(file); return; }
+        }
+      }
+
+      // 处理文本
+      for (const item of items) {
+        if (item.kind === 'string' && item.type === 'text/plain') {
+          item.getAsString((text) => {
+            if (text.trim()) {
+              pendingSendRef.current = true;
+              setTextMessage(text);
+            }
+          });
+          return;
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [onSendFile, setTextMessage]);
 
   const handleCopy = (text) => {
-    navigator.clipboard.writeText(text).catch(() => {});
+    // 优先使用现代 Clipboard API
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(() => {
+        fallbackCopy(text);
+      });
+    } else {
+      // 降级方案：使用传统方法
+      fallbackCopy(text);
+    }
+  };
+
+  const fallbackCopy = (text) => {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+    } catch (err) {
+      console.error('Copy failed:', err);
+    }
+    document.body.removeChild(textarea);
   };
 
   const handleDrop = (e) => {
