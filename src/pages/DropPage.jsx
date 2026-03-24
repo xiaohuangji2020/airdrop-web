@@ -19,6 +19,7 @@ export default function DropPage() {
   const [isAutoConnecting, setIsAutoConnecting] = useState(false);
 
   const peerRef = useRef(null);
+  const connRef = useRef(null);
   const autoConnectAttempted = useRef(false);
 
   const addLog = (msg, color = '') => {
@@ -26,6 +27,8 @@ export default function DropPage() {
   };
 
   const setupConnection = (connection) => {
+    connRef.current = connection;
+    setConn(connection);
     connection.on('data', (data) => {
       if (data.type === 'text') {
         addLog(`Received message from ${connection.peer.slice(0, 8)}...`, 'log-blue');
@@ -44,6 +47,7 @@ export default function DropPage() {
       }
     });
     connection.on('close', () => {
+      connRef.current = null;
       setConn(null);
       addLog('Connection closed.');
     });
@@ -51,7 +55,17 @@ export default function DropPage() {
 
   const initializePeer = (customPeerId = null, autoConnectId = null) => {
     if (peerRef.current) peerRef.current.destroy();
-    const peer = customPeerId ? new Peer(customPeerId) : new Peer();
+    const peerConfig = {
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.miwifi.com' },
+          { urls: 'stun:stun.qq.com' },
+          { urls: 'stun:stun.cloudflare.com:3478' },
+          { urls: 'stun:stun.l.google.com:19302' },
+        ],
+      },
+    };
+    const peer = customPeerId ? new Peer(customPeerId, peerConfig) : new Peer(peerConfig);
 
     peer.on('open', (id) => {
       setMyId(id);
@@ -63,7 +77,6 @@ export default function DropPage() {
         addLog(`Auto-connecting to: ${autoConnectId}`);
         setTimeout(() => {
           const connection = peer.connect(autoConnectId);
-          setConn(connection);
           connection.on('open', () => {
             addLog(`Connected to ${autoConnectId}`, 'log-green');
             setupConnection(connection);
@@ -81,7 +94,6 @@ export default function DropPage() {
     });
 
     peer.on('connection', (connection) => {
-      setConn(connection);
       addLog(`User ${connection.peer.slice(0, 16)}... connected to you`, 'log-green');
       setupConnection(connection);
     });
@@ -113,7 +125,6 @@ export default function DropPage() {
   const connectToPeer = () => {
     if (!targetId || !peerRef.current) return;
     const connection = peerRef.current.connect(targetId);
-    setConn(connection);
     addLog(`Connecting to ${targetId}...`);
     connection.on('open', () => {
       addLog(`Connected to ${targetId}`, 'log-green');
@@ -122,9 +133,9 @@ export default function DropPage() {
   };
 
   const handleSendFile = (file) => {
-    if (!file || !conn) return;
+    if (!file || !connRef.current) return;
     addLog(`Sending ${file.name}...`);
-    conn.send({ file, fileName: file.name, fileType: file.type });
+    connRef.current.send({ file, fileName: file.name, fileType: file.type });
     setSentFiles(prev => [...prev, {
       id: Date.now(), file, fileName: file.name,
       fileType: file.type, size: file.size,
@@ -133,9 +144,9 @@ export default function DropPage() {
   };
 
   const handleSendText = () => {
-    if (!textMessage.trim() || !conn) return;
+    if (!textMessage.trim() || !connRef.current) return;
     addLog(`Sending message: ${textMessage}`);
-    conn.send({ type: 'text', message: textMessage });
+    connRef.current.send({ type: 'text', message: textMessage });
     setSentFiles(prev => [...prev, {
       id: Date.now(), message: textMessage,
       sentAt: new Date().toLocaleTimeString()
@@ -155,7 +166,8 @@ export default function DropPage() {
   const handleRemove = (id) => setReceivedFiles(prev => prev.filter(f => f.id !== id));
 
   const handleDisconnect = () => {
-    conn?.close();
+    connRef.current?.close();
+    connRef.current = null;
     setConn(null);
     addLog('Disconnected.');
   };

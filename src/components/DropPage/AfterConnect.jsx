@@ -1,12 +1,55 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
+
+function getObjectUrl(file, fileType) {
+  if (!file) return null;
+  const blob = file instanceof Blob ? file : new Blob([file], { type: fileType });
+  return URL.createObjectURL(blob);
+}
+
+function ImageThumb({ file, fileType, fileName, onClick }) {
+  const [src, setSrc] = useState(null);
+  useEffect(() => {
+    const url = getObjectUrl(file, fileType);
+    setSrc(url);
+    return () => { if (url) URL.revokeObjectURL(url); };
+  }, [file, fileType]);
+  if (!src) return <span>🖼</span>;
+  return (
+    <img
+      src={src}
+      alt={fileName}
+      className="dp-file-thumb"
+      onClick={(e) => { e.stopPropagation(); onClick(src); }}
+      title="点击放大"
+    />
+  );
+}
 
 function FileIcon({ fileType }) {
-  if (fileType?.startsWith('image/')) return <span>🖼</span>;
   if (fileType?.startsWith('video/')) return <span>🎥</span>;
   if (fileType?.startsWith('audio/')) return <span>🎵</span>;
   if (fileType?.includes('pdf')) return <span>📄</span>;
   if (fileType?.includes('zip') || fileType?.includes('rar')) return <span>📦</span>;
   return <span>📎</span>;
+}
+
+function Lightbox({ src, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <div className="dp-lightbox" onClick={onClose}>
+      <button className="dp-lightbox-close" onClick={onClose}>✕</button>
+      <img
+        src={src}
+        className="dp-lightbox-img"
+        onClick={(e) => e.stopPropagation()}
+        alt="preview"
+      />
+    </div>
+  );
 }
 
 function formatSize(bytes) {
@@ -17,12 +60,15 @@ function formatSize(bytes) {
   return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 }
 
-function ReceivedItem({ item, onDownload, onRemove, onCopy }) {
+function ReceivedItem({ item, onDownload, onRemove, onCopy, onPreview }) {
   const isText = !item.file;
+  const isImage = item.fileType?.startsWith('image/');
   return (
     <div className="dp-file-item">
-      <div className="dp-file-icon-wrap">
-        {isText ? <span>📝</span> : <FileIcon fileType={item.fileType} />}
+      <div className={`dp-file-icon-wrap${isImage ? ' dp-file-icon-wrap--img' : ''}`}>
+        {isText ? <span>📝</span> : isImage
+          ? <ImageThumb file={item.file} fileType={item.fileType} fileName={item.fileName} onClick={onPreview} />
+          : <FileIcon fileType={item.fileType} />}
       </div>
       <div className="dp-file-info">
         {isText ? (
@@ -48,12 +94,15 @@ function ReceivedItem({ item, onDownload, onRemove, onCopy }) {
   );
 }
 
-function SentItem({ item }) {
+function SentItem({ item, onPreview }) {
   const isText = !item.file;
+  const isImage = item.fileType?.startsWith('image/');
   return (
     <div className="dp-file-item">
-      <div className="dp-file-icon-wrap">
-        {isText ? <span>💬</span> : <FileIcon fileType={item.fileType} />}
+      <div className={`dp-file-icon-wrap${isImage ? ' dp-file-icon-wrap--img' : ''}`}>
+        {isText ? <span>💬</span> : isImage
+          ? <ImageThumb file={item.file} fileType={item.fileType} fileName={item.fileName} onClick={onPreview} />
+          : <FileIcon fileType={item.fileType} />}
       </div>
       <div className="dp-file-info">
         {isText ? (
@@ -78,6 +127,8 @@ export default function AfterConnect({
 }) {
   const fileInputRef = useRef(null);
   const pendingSendRef = useRef(false);
+  const [lightboxSrc, setLightboxSrc] = useState(null);
+  const handlePreview = useCallback((src) => setLightboxSrc(src), []);
 
   // 当 textMessage 被粘贴内容更新后，自动触发发送
   useEffect(() => {
@@ -165,6 +216,7 @@ export default function AfterConnect({
 
   return (
     <main className="dp-after-main">
+      {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
       <div className="dp-after-grid">
         {/* Left column */}
         <div className="dp-left-col">
@@ -219,6 +271,7 @@ export default function AfterConnect({
                     onDownload={onDownload}
                     onRemove={onRemove}
                     onCopy={handleCopy}
+                    onPreview={handlePreview}
                   />
                 ))
               )}
@@ -242,7 +295,7 @@ export default function AfterConnect({
                 </div>
               ) : (
                 sentFiles.map(item => (
-                  <SentItem key={item.id} item={item} />
+                  <SentItem key={item.id} item={item} onPreview={handlePreview} />
                 ))
               )}
             </div>
